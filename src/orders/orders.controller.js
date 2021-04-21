@@ -70,28 +70,26 @@ function hasValidDishes (req, res, next) {
         return next({
         status: 400,
         message: "Order must include at least one dish."
-    })
-} else {
-    return next();
-}
-}
+        });
+    } else {
+        return next();
+    };
+};
 
 //valid dishes quantity
-function hasValidDishQuantity(req, res, next) {
-    const { data: {dishes} = {} } = req.body;
-    if (dishes) {
+function hasValidDishQuantity(req, res, next){
+    const { data: { dishes } = {} } = req.body;
     dishes.forEach((dish, index) => {
-            if (dish.quantity && dish.quantity !== 0 && typeof dish.quantity === 'number') {
-                return next();
-            } else {
-                return next({
-                    status: 400,
-                    message: `Dish ${index} must have a quantity that is an integer greater than 0.`
-                });
-            }
-        })
-    }
-      }; 
+        const quantity = dish.quantity;
+        if(!quantity || quantity <= 0 || typeof quantity !== 'number') {
+            return next({
+                status: 400,
+                message: `Dish ${index} must have a quantity that is an integer greater than 0`
+            });
+        };
+    });
+    return next();
+};
 
 
 //valid delivery status
