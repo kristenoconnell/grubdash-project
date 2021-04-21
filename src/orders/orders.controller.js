@@ -71,51 +71,34 @@ function hasValidMobileNumber(req, res, next) {
 function hasValidDishes (req, res, next) {
     const { data: { dishes } = {} } = req.body;
      
-    if (dishes && dishes.length !== 0 && Array.isArray(dishes)) {
-        dishes.forEach((dish, index) => {
+    if (!dishes || dishes.length === 0 || !Array.isArray(dishes)) {
+        return next({
+        status: 400,
+        message: "Order must include at least one dish."
+    })
+} else {
+    return next();
+}
+}
+
+//valid dishes quantity
+function hasValidDishQuantity(req, res, next) {
+    const { data: {dishes} = {} } = req.body;
+    
+    dishes.forEach((dish, index) => {
             if (dish.quantity && dish.quantity !== 0 && typeof dish.quantity === 'number') {
                 return next();
             } else {
                 return next({
                     status: 400,
-                    message: `Dish ${index} must have a quantity that is an integer greater than 0`
-                })
+                    message: `Dish ${index} must have a quantity that is an integer greater than 0.`
+                });
             }
         })
-    } else {
-        return next({
-            status: 400,
-            message: "Order must include at least one dish."
-        });
-    };
-};
+      }; 
 
-//dishes is an array
-/*function hasValidDishArray(req, res, next) {
-    const {data : { dishes } = {} } = req.body;
-    
-    if(!Array.isArray(dishes) || dishes.length === 0) {
-        return next();
-    }
-    return next({
-        status: 400,
-        message: "Dishes must include at least one dish."
-    });
-};*/
 
-//valid dishes quantity 
-/*function hasValidDishQuantity(req, res, next) {
-    const { data: { dishes } = {} } = req.body;
-    dishes.forEach((dish, index) => {
-        if (!dish.quantity || dish.quantity <= 0 || typeof dish.quantity !== 'number')  {
-            return next({
-                status: 400,
-                message: `Dish ${index} must have a quantity that is an integer greater than 0`
-            });
-            } 
-                return next();
-        });
-    };*/
+
 
 //valid delivery status
 function validStatusToUpdate(req, res, next) {
@@ -132,6 +115,20 @@ function validStatusToUpdate(req, res, next) {
         });
     };
 };
+
+function orderIdMatchesData(req, res, next) {
+    const { orderId } = req.params;
+    const { data: { id } = {} } = req.body;
+
+    if (id === orderId || !id) {
+        return next();
+    } else {
+        return next({
+            status: 400,
+            message: `Order id does not match route id. Order: ${id}, Route: ${orderId}.`
+        })
+    }
+}
 
 // TODO: Implement the /orders handlers needed to make the tests pass
 
@@ -160,12 +157,18 @@ function create(req, res) {
 
 function update(req, res) {
     const order = res.locals.order;
+    const { data }  = req.body;
+    if (order.id) { data.id = order.id};
 
-    if (order.id !== req.body.order.id) {
-        order = req.body.order;
+    const order = {
+        id: data.id,
+        deliverTo: data.deliverTo,
+        mobileNumber: data.mobileNumber,
+        status: data.status,
+        dishes: data.dishes
     }
 
-    res.json({data: order});
+    res.json({ data: order });
 
 
 }
@@ -176,16 +179,31 @@ function destroy(req, res) {
     const deletedOrder = orders.splice(index, 1);
 
     res.sendStatus(204);
-
-
-
-}
+};
 
 
 module.exports = {
     list,
-    read: [orderExists, read],
-    create: [hasValidAddress, hasValidMobileNumber, hasValidDishes, create],
-    update: [orderExists, validStatusToUpdate, hasValidAddress, hasValidMobileNumber, hasValidDishes, update],
-    delete: [orderExists, orderIsPending, destroy]
-}
+    read: [
+        orderExists, 
+        read],
+    create: [
+        hasValidAddress, 
+        hasValidMobileNumber, 
+        hasValidDishes, 
+        hasValidDishQuantity, 
+        create],
+    update: [
+        orderExists, 
+        orderIdMatchesData, 
+        validStatusToUpdate, 
+        hasValidAddress, 
+        hasValidMobileNumber, 
+        hasValidDishes, 
+        hasValidDishQuantity, 
+        update],
+    delete: [
+        orderExists, 
+        orderIsPending, 
+        destroy]
+};

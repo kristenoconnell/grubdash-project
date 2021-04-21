@@ -32,9 +32,9 @@ function dataIdMatchesDish(req, res, next) {
             return next({
                 status: 400,
                 message: `Dish id does not match route id. Dish: ${id}, Route: ${dishId}`
-            })
-        }
-    }
+         });
+    };
+};
 
 //dish has name property
 function hasValidName(req, res, next) {
@@ -52,7 +52,6 @@ function hasValidName(req, res, next) {
 //dish has description property
 function hasValidDescription(req, res, next) {
     const { data: { description } = {} } = req.body;
-
     if (description) {
         return next();
     } else {
@@ -76,10 +75,10 @@ function hasValidPrice(req, res, next) {
     };
 };
 
+
 //dish has valid imageurl
 function hasValidImageUrl(req, res, next) {
     const { data: { image_url } = {} } = req.body;
-
     if(image_url) {
         return next();
     } else {
@@ -98,26 +97,27 @@ function list(req, res) {
     res.json({ data: dishes });
 };
 
+
 function read(req, res) {
     const dish = res.locals.dish;
     res.json({ data: dish });
-}
+};
+
 
 function update(req, res) {
-
-    const originalDishName = res.locals.dish;
-    const { data: dish = {} } = req.body;
-
-    if (originalDishName !== dish ) {
-        if (originalDishName.id) { 
-            res.locals.dish.id === originalDishName.id
-        };
-
-        res.locals.dish = dish;
-    } 
+    let dish = res.locals.dish;
+    const { data } = req.body;
+        if (dish.id) { data.id = dish.id } 
+    dish = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        image_url: data.image_url
+    }
     res.json({ data: dish });
+};
 
-}
 
 function create(req, res) {
     const { data: { name, description, price, image_url } = {} } = req.body;
@@ -134,15 +134,23 @@ function create(req, res) {
 };
 
 
-
-
-
-
-
-
 module.exports = {
     list,
-    read: [dishExists, read],
-    create: [hasValidName, hasValidDescription, hasValidPrice, hasValidImageUrl, create],
-    update: [dishExists, hasValidName, hasValidDescription, hasValidPrice, hasValidImageUrl, dataIdMatchesDish, update]
-}
+    read: [
+        dishExists, 
+        read],
+    create: [
+        hasValidName, 
+        hasValidDescription, 
+        hasValidPrice, 
+        hasValidImageUrl, 
+        create],
+    update: [
+        dishExists, 
+        hasValidName, 
+        hasValidDescription, 
+        hasValidPrice, 
+        hasValidImageUrl, 
+        dataIdMatchesDish, 
+        update]
+};
