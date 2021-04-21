@@ -6,11 +6,10 @@ const orders = require(path.resolve("src/data/orders-data"));
 // Use this function to assigh ID's when necessary
 const nextId = require("../utils/nextId");
 
-//middleware
+//check that order exists
 function orderExists(req, res, next){
     const { orderId } = req.params;
     const foundOrder = orders.find((order) => order.id === orderId);
-
     if(foundOrder) {
         res.locals.order = foundOrder;
         return next();
@@ -22,11 +21,10 @@ function orderExists(req, res, next){
     };
 };
 
-//order pending middleware for destroy function
+//order-pending middleware for destroy function
 function orderIsPending(req, res, next) {
     const { orderId } = req.params;
     const foundOrder = orders.find((order) => order.id === orderId);
-
     if(foundOrder && foundOrder.status === 'pending') {
         res.locals.order = foundOrder;
         return next();
@@ -41,7 +39,6 @@ function orderIsPending(req, res, next) {
 //valid delivery address
 function hasValidAddress(req, res, next) {
     const { data: { deliverTo } = {} } = req.body;
-
     if (deliverTo) {
         return next();
     } else {
@@ -50,22 +47,20 @@ function hasValidAddress(req, res, next) {
             message: "A 'deliverTo' property is required."
         });
     };
-
 };
 
 //valid mobile number
 function hasValidMobileNumber(req, res, next) {
     const { data: { mobileNumber } = {} } = req.body;
-
     if (mobileNumber) {
         return next();
     } else {
         return next({
             status: 400,
             message: "A 'mobileNumber' is required."
-        })
-    }
-} 
+        });
+    };
+}; 
 
 //valid dishes property
 function hasValidDishes (req, res, next) {
@@ -84,7 +79,7 @@ function hasValidDishes (req, res, next) {
 //valid dishes quantity
 function hasValidDishQuantity(req, res, next) {
     const { data: {dishes} = {} } = req.body;
-    
+    if (dishes) {
     dishes.forEach((dish, index) => {
             if (dish.quantity && dish.quantity !== 0 && typeof dish.quantity === 'number') {
                 return next();
@@ -95,16 +90,13 @@ function hasValidDishQuantity(req, res, next) {
                 });
             }
         })
+    }
       }; 
-
-
 
 
 //valid delivery status
 function validStatusToUpdate(req, res, next) {
-
     const { data: { status } = {} } = req.body;
-
     if (status === 'pending' || status === 'out-for-delivery' || status === 
 'preparing') {
         return next();
@@ -116,19 +108,19 @@ function validStatusToUpdate(req, res, next) {
     };
 };
 
+//order id matches data id or is null
 function orderIdMatchesData(req, res, next) {
     const { orderId } = req.params;
     const { data: { id } = {} } = req.body;
-
     if (id === orderId || !id) {
         return next();
     } else {
         return next({
             status: 400,
             message: `Order id does not match route id. Order: ${id}, Route: ${orderId}.`
-        })
-    }
-}
+        });
+    };
+};
 
 // TODO: Implement the /orders handlers needed to make the tests pass
 
@@ -136,10 +128,12 @@ function list(req, res) {
     res.json({ data: orders });
 };
 
+
 function read(req, res) {
     const order = res.locals.order;
     res.json({ data: order });
 };
+
 
 function create(req, res) {
     const { data: { deliverTo, mobileNumber, status, dishes } = {} } =  req.body;
@@ -155,30 +149,27 @@ function create(req, res) {
     res.status(201).json({ data: newOrder});
 };
 
+
 function update(req, res) {
-    const order = res.locals.order;
+    let order = res.locals.order;
     const { data }  = req.body;
     if (order.id) { data.id = order.id};
-
-    const order = {
-        id: data.id,
-        deliverTo: data.deliverTo,
-        mobileNumber: data.mobileNumber,
-        status: data.status,
-        dishes: data.dishes
-    }
-
+         order = {
+            id: data.id,
+            deliverTo: data.deliverTo,
+            mobileNumber: data.mobileNumber,
+            status: data.status,
+            dishes: data.dishes
+        };
     res.json({ data: order });
+};
 
-
-}
 
 function destroy(req, res) {
     const orderToDelete = res.locals.order;
     const index = orders.find((order) => order.id === orderToDelete.id);
-    const deletedOrder = orders.splice(index, 1);
-
-    res.sendStatus(204);
+        orders.splice(index, 1);
+        res.sendStatus(204);
 };
 
 
